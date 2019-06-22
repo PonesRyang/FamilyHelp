@@ -1,3 +1,6 @@
+import uuid
+from time import timezone
+
 from rest_framework.response import Response
 from django.shortcuts import render
 from hashlib import md5
@@ -12,8 +15,41 @@ from api.serializers import ArticleSerializer, OrderDetailSerializer,StarStaffSe
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
-from api.filters import OrderFilterSet
+from api.filters import OrderFilterSet, StarStaffFilterSet
 from api.forms import UserInfoForm
+
+
+class DistrictViewSet(ListAPIView):
+    queryset = District.objects.all()
+    serializer_class = DistrictSimpleSerializer
+
+
+@api_view(['POST'])
+def SubmitList(request):
+    order_addr = request.data.get('order_addr')
+    order_plantime = request.data.get('order_plantime')
+    district = request.data.get('district')
+    district1 = District.objects.get(name=district)
+    user = request.session.get('user')
+    if order_addr and order_plantime:
+        current_time = timezone.now()
+        order =Orders()
+        order.order_addr = order_addr
+        order.order_plantime = order_plantime
+        order.order_createtime = current_time
+        order.district = district1
+        order.u = user
+        order.order_status = 2
+        order.order_number = uuid.uuid4().hex
+        order.save()
+        data={
+            'code':200, 'message':'订单已生成'
+        }
+    else:
+        data={
+            'code':300, 'message':'订单地址不能为空'
+        }
+    return Response(data)
 
 
 class StarStaffView(ListAPIView):
