@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import Article, StarArticle, Orders, Users, Roles, OrderType, District
+from api.models import Article, StarArticle, Orders, Users, Roles, OrderType, District, Wallet
 
 
 class RolesSimpleSerializer(serializers.ModelSerializer):
@@ -91,3 +91,15 @@ class OrderDetailSerializer(serializers.ModelSerializer):
 		model = Orders
 		fields = ('order_money', 'u_relname', 'order_createtime', 'order_finishtime', 'order_number',
 				  'order_addr', 'order_tips')
+
+
+class WalletSerializer(serializers.ModelSerializer):
+	money = serializers.SerializerMethodField()
+
+	@staticmethod
+	def get_money(wallet):
+		return '{}.{}'.format(wallet.money_int,wallet.money_decimal)
+
+	class Meta:
+		model = Wallet
+		fields = 'money',

@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '71ajo=)0==bc0slnnhy7v#mruhs!f4h&ra6oveg3gf2o2(25&k'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -213,3 +213,26 @@ REST_FRAMEWORK_EXTENSIONS = {
     'DEFAULT_LIST_CACHE_KEY_FUNC': 'rest_framework_extensions.utils.default_list_cache_key_func',
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
 }
+
+
+# 保持HTTPS连接的时间
+SECURE_HSTS_SECONDS = 3600
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+
+# 自动重定向到安全连接
+SECURE_SSL_REDIRECT = True
+
+# 避免浏览器自作聪明推断内容类型
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# 避免跨站脚本攻击
+SECURE_BROWSER_XSS_FILTER = True
+
+# COOKIE只能通过HTTPS进行传输
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
+# 防止点击劫持攻击手段 - 修改HTTP协议响应头
+# 当前网站是不允许使用<iframe>标签进行加载的
+X_FRAME_OPTIONS = 'DENY'

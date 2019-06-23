@@ -14,10 +14,11 @@ from rest_framework.decorators import api_view
 
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
-from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, StarArticle
+from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, \
+	StarArticle, Wallet
 from api.serializers import ArticleSerializer, OrderDetailSerializer, StarStaffSerializer, OrdersTypeSerializer, \
 	DistrictSimpleSerializer, \
-	DistrictDetailSerializer
+	DistrictDetailSerializer, WalletSerializer
 
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -58,28 +59,32 @@ def send_mobile_code(request, tel):
 # 		pass
 
 
-@api_view(['GET', 'POST'])
+@api_view(['POST'])
 def login(request):
-	if request.method == 'GET':
-		return render(request, 'login.html')
-	if request.method == 'POST':
-		form = LoginForm(request.POST)
-		if form.is_valid():
-			captcha_from_user = form.cleaned_data['captcha']
-			captcha_from_sess = request.session.get('captcha', '')
-			if captcha_from_sess.lower() != captcha_from_user.lower():
-				hint = '请输入正确的图形验证码'
-			else:
-				tel = form.cleaned_data['tel']
-				# user = User.objects.filter(tel=tel).first()
-				# if tel:
-				# request.session['user'] = user
-				return HttpResponse('跳转首页成功')
-		# else:
-		# 	hint = '用户名或密码错误'
+	form = LoginForm(request.POST)
+	if form.is_valid():
+		captcha_from_user = form.cleaned_data['captcha']
+		captcha_from_sess = request.session.get('captcha', '')
+		if captcha_from_sess.lower() != captcha_from_user.lower():
+			hint = {'code': 400, 'mes': '请输入正确的验证码'}
 		else:
-			hint = '请输入有效的登录信息'
-	return render(request, 'login.html', {'hint': hint})
+			tel = form.cleaned_data['tel']
+			user = Users.objects.filter(tel=tel).first()
+			if user:
+				request.session['user'] = user
+				hint = {'code': 200, 'mes': '用户登录成功'}
+			else:
+				user = Users()
+				user.u_tel = tel
+				user.u_nickname = '用户{}'.format(uuid.uuid4())
+				user.save()
+				request.session['user'] = user
+				hint = {'code': 201, 'mes': '用户注册成功，成功登陆'}
+	# else:
+	# 	hint = '用户名或密码错误'
+	else:
+		hint = {'code': 400, 'mes': '请输入有效的登录信息'}
+	return JsonResponse(hint)
 
 
 class DistrictViewSet(ListAPIView):
@@ -205,8 +210,8 @@ class OrderViewsSet(ModelViewSet):
 	ordering = ('-order_createtime',)
 
 	def get_queryset(self):
-		u_id = self.request.session['user'].u_id
-		self.queryset = Orders.objects.filter(users=u_id).all()
+		# u_id = self.request.session['user'].u_id
+		self.queryset = Orders.objects.filter(users=1).all()
 		return self.queryset
 
 
@@ -306,3 +311,12 @@ def add_star_article(request):
 	# except:
 	# 	data = {'code':400,'mes':'评价失败，请重试'}
 	return JsonResponse(data)
+
+
+class WalletAPIView(ListAPIView):
+	serializer_class = WalletSerializer
+	pagination_class = None
+
+	def get_queryset(self):
+		return Wallet.objects.filter(user=self.request.session['user'])
+		#
