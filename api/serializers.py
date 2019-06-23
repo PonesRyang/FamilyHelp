@@ -1,6 +1,48 @@
 from rest_framework import serializers
+from api.models import Article, StarArticle, Orders, Users, Roles, OrderType, District
 
-from api.models import Article, StarArticle, Orders, Tags
+
+class RolesSimpleSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Roles
+		fields = '__all__'
+
+
+class StarStaffSerializer(serializers.ModelSerializer):
+	role = serializers.SerializerMethodField()
+
+	@staticmethod
+	def get_roles(user):
+		return RolesSimpleSerializer(user.role.r_name, many=True).data
+
+	class Meta:
+		model = Users
+		fields = ('u_relname', 'u_tel', 'u_birthday', 'u_photo', 'star_lv', 'u_intro')
+
+
+class OrdersTypeSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = OrderType
+		fields = ('order_type_name',)
+
+
+class DistrictSimpleSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = District
+		fields = ('distid', 'name')
+
+
+class DistrictDetailSerializer(serializers.ModelSerializer):
+	cities = serializers.SerializerMethodField()
+
+	@staticmethod
+	def get_cities(district):
+		queryset = District.objects.filter(parent=district)
+		return DistrictSimpleSerializer(queryset, many=True).data
+
+	class Meta:
+		model = District
+		fields = ('distid', 'name', 'cities')
 
 
 class StarArticleSerializer(serializers.ModelSerializer):
@@ -9,15 +51,8 @@ class StarArticleSerializer(serializers.ModelSerializer):
 		fields = 'star',
 
 
-class TagsSerializer(serializers.ModelSerializer):
-	class Meta:
-		model = Tags
-		fields = 'tag_name',
-
-
 class ArticleSerializer(serializers.ModelSerializer):
 	star = serializers.SerializerMethodField()
-	ar_tag = serializers.SerializerMethodField()
 
 	@staticmethod
 	def get_star(article):
@@ -30,17 +65,6 @@ class ArticleSerializer(serializers.ModelSerializer):
 		if (total % len(data)) >= len(data) // 2:
 			star = '{}.5'.format(star)
 		return star
-
-	@staticmethod
-	def get_ar_tag(article):
-		queryset = article.ar_tag
-		data = TagsSerializer(queryset, many=True).data
-		tag_list = []
-		for tag in data:
-			tag_list.append(tag['tag_name'])
-		return tag_list
-
-
 
 	class Meta:
 		model = Article
