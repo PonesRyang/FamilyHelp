@@ -9,7 +9,7 @@ from django.http import JsonResponse
 from rest_framework.decorators import api_view
 
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District
+from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, StarArticle
 from api.serializers import ArticleSerializer, OrderDetailSerializer, StarStaffSerializer, OrdersTypeSerializer, \
 	DistrictSimpleSerializer, \
 	DistrictDetailSerializer
@@ -229,3 +229,18 @@ def order_finish_or_cancel(request):
 		order.save()
 	data = {'code': 200, 'message': '操作成功'}
 	return JsonResponse(data=data)
+
+@api_view(['POST'])
+def add_star_article(request):
+	# try:
+	with atomic():
+		new_star = StarArticle()
+		new_star.article = Article.objects.filter(ar_id=request.data.get('article_id')).first()
+		new_star.star = request.data.get('article_star')
+		# new_star.user = request.session['user']
+		new_star.user = Users.objects.filter(u_id=1).first()
+		new_star.save()
+		data = {'code':200,'mes':'评价成功'}
+	# except:
+	# 	data = {'code':400,'mes':'评价失败，请重试'}
+	return JsonResponse(data)
