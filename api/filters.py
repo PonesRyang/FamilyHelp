@@ -12,6 +12,18 @@ class StarStaffFilterSet(django_filters.FilterSet):
 
         return queryset.filter(Q(u_relnam__icontains=value)) | Q(u_tel=value)
 
+    @property  # 将ps方法编成一个属性
+    def qs(self):
+        parent = super(StarStaffFilterSet, self).qs
+        q = Q()
+        u_realname = self.request.query_params.get('u_realname')
+        if u_realname:
+            q |= Q(u_relname=u_realname)
+        u_tel = self.request.query_params.get('u_tel')
+        if u_tel:
+            q |= Q(u_tel=u_tel)
+        return parent.filter(q)
+
 
 class OrderFilterSet(django_filters.FilterSet):
     user = django_filters.NumberFilter(method='filter_by_user')

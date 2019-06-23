@@ -8,16 +8,22 @@ class RolesSimpleSerializer(serializers.ModelSerializer):
 		fields = '__all__'
 
 
+class RolesSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Roles
+		fields = ('r_name',)
+
+
 class StarStaffSerializer(serializers.ModelSerializer):
 	role = serializers.SerializerMethodField()
 
 	@staticmethod
-	def get_roles(user):
-		return RolesSimpleSerializer(user.role.r_name, many=True).data
+	def get_role(user):
+		return RolesSerializer(user.role, many=True).data
 
 	class Meta:
 		model = Users
-		fields = ('u_relname', 'u_tel', 'u_birthday', 'u_photo', 'star_lv', 'u_intro')
+		fields = ('u_relname', 'u_tel', 'u_birthday', 'u_photo', 'star_lv', 'role')
 
 
 class OrdersTypeSerializer(serializers.ModelSerializer):
