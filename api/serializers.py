@@ -101,5 +101,5 @@ class WalletSerializer(serializers.ModelSerializer):
 		return '{}.{}'.format(wallet.money_int,wallet.money_decimal)
 
 	class Meta:
-		model = Wallet
+		model = Wallet3
 		fields = 'money',

@@ -67,7 +67,7 @@ class Comment(models.Model):
 	user = models.ForeignKey('Users', models.PROTECT, blank=True, null=True)
 	content = models.CharField(max_length=512, blank=True, null=True)
 	content_star = models.IntegerField()
-	is_delete = models.IntegerField(blank=True, null=True)
+	is_delete = models.BooleanField(default=0)
 
 	class Meta:
 		managed = False
@@ -108,7 +108,7 @@ class Orders(models.Model):
 	order_id = models.AutoField(primary_key=True)
 	order_type = models.ForeignKey(OrderType, models.PROTECT, blank=True, null=True)
 	order_number = models.CharField(max_length=128)
-	order_status = models.IntegerField()
+	order_status = models.IntegerField(default=0)
 	order_createtime = models.DateTimeField(auto_now_add=True)
 	order_finishtime = models.DateTimeField(blank=True, null=True)
 	order_plantime = models.DateTimeField()

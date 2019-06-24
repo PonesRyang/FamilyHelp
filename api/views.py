@@ -15,7 +15,7 @@ from rest_framework.decorators import api_view
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
 from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, \
-	StarArticle, Wallet
+	StarArticle, Wallet, UserOrderList
 from api.serializers import ArticleSerializer, OrderDetailSerializer, StarStaffSerializer, OrdersTypeSerializer, \
 	DistrictSimpleSerializer, \
 	DistrictDetailSerializer, WalletSerializer
@@ -37,17 +37,23 @@ def get_captcha(request):
 
 def send_mobile_code(request, tel):
 	"""发送短信验证码"""
-	code = random_mobile_code()
-	if tel in caches['mobile']:
-		data = {'code': 403, 'message': '请不要在120秒内重复发送'}
-	else:
-		result = send_code_by_sms(tel, code)
-		if result['error'] == 0:
-			# 将手机验证码保存到缓存中
-			caches['mobile'].set(tel, code, timeout=120)
-			data = {'code': 200, 'message': '短信验证码已发送'}
-		else:
-			data = {'code': 404, 'message': '短信验证码服务暂时无法使用'}
+	# code = random_mobile_code()
+	# if tel in caches['mobile']:
+	#     data = {'code': 403, 'message': '请不要在120秒内重复发送'}
+	# else:
+	#     result = send_code_by_sms(tel, code)
+	#     if result['error'] == 0:
+	#         # 将手机验证码保存到缓存中
+	#         caches['mobile'].set(tel, code, timeout=120)
+	#         data = {'code': 200, 'message': '短信验证码已发送'}
+	#     else:
+	#         data = {'code': 404, 'message': '短信验证码服务暂时无法使用'}
+	try:
+		code = '123456'
+		caches['mobile'].set(tel, code)
+		data = {'code': 200, 'message': '短信验证码已发送成功'}
+	except:
+		data = {'code': 201, 'message': '短信验证码未发送成功'}
 	return JsonResponse(data)
 
 
@@ -66,25 +72,31 @@ def login(request):
 		captcha_from_user = form.cleaned_data['captcha']
 		captcha_from_sess = request.session.get('captcha', '')
 		if captcha_from_sess.lower() != captcha_from_user.lower():
-			hint = {'code': 400, 'mes': '请输入正确的验证码'}
+			hint = '请输入正确的图形验证码'
+			data = {'code': 201, 'message': '验证码不匹配', 'hint': hint}
 		else:
 			tel = form.cleaned_data['tel']
-			user = Users.objects.filter(tel=tel).first()
+			user = Users.objects.filter(u_tel=tel).first()
 			if user:
-				request.session['user'] = user
-				hint = {'code': 200, 'mes': '用户登录成功'}
+				code_from_cache = caches['mobile'].get(tel)
+				code_from_user = form.cleaned_data['phoneCode']
+				if code_from_cache == code_from_user:
+					request.session['user'] = user
+					data = {'code': 200, 'message': '校验成功'}
+				else:
+					hint = '用户名或验证码错误'
+					data = {'code': 300, 'hint': hint}
 			else:
 				user = Users()
 				user.u_tel = tel
 				user.u_nickname = '用户{}'.format(uuid.uuid4())
 				user.save()
 				request.session['user'] = user
-				hint = {'code': 201, 'mes': '用户注册成功，成功登陆'}
-	# else:
-	# 	hint = '用户名或密码错误'
+				data = {'code': 201, 'mes': '用户注册成功，成功登陆'}
 	else:
-		hint = {'code': 400, 'mes': '请输入有效的登录信息'}
-	return JsonResponse(hint)
+		hint = '请输入有效的登录信息'
+		data = {'code': 301, 'hint': hint}
+	return JsonResponse(data)
 
 
 class DistrictViewSet(ListAPIView):
@@ -106,6 +118,10 @@ def SubmitList(request):
 		order.order_plantime = order_plantime
 		order.order_createtime = current_time
 		order.district = district1
+		user_order = UserOrderList()
+		user_order.u = user
+		user_order.order = order
+		user_order.save()
 		order.u = user
 		order.order_status = 2
 		order.order_number = uuid.uuid4().hex
@@ -319,4 +335,4 @@ class WalletAPIView(ListAPIView):
 
 	def get_queryset(self):
 		return Wallet.objects.filter(user=self.request.session['user'])
-		#
+	#
