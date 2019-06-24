@@ -96,7 +96,6 @@ class OrderComplain(models.Model):
 
 class OrderType(models.Model):
 	order_type_id = models.AutoField(primary_key=True)
-	order = models.ForeignKey('Orders', models.PROTECT, blank=True, null=True)
 	order_type_name = models.CharField(max_length=128)
 
 	class Meta:

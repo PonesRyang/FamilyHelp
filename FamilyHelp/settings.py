@@ -237,3 +237,59 @@ REST_FRAMEWORK_EXTENSIONS = {
 # # 防止点击劫持攻击手段 - 修改HTTP协议响应头
 # # 当前网站是不允许使用<iframe>标签进行加载的
 # X_FRAME_OPTIONS = 'DENY'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    # 配置日志格式化器
+    'formatters': {
+        'simple': {
+            'format': '%(asctime)s %(module)s.%(funcName)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s [%(process)d-%(threadName)s] '
+                      '%(module)s.%(funcName)s line %(lineno)d: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        }
+    },
+    # 配置日志过滤器
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    # 配置日志处理器
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'WARNING',
+            'filters': ['require_debug_true'],
+            'formatter': 'simple',
+        },
+        'file1': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'access.log',
+            'when': 'W0',
+            'backupCount': 12,
+            'formatter': 'simple',
+            'level': 'INFO',
+        },
+        'file2': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'error.log',
+            'when': 'D',
+            'backupCount': 31,
+            'formatter': 'verbose',
+            'level': 'WARNING',
+        },
+    },
+    # 配置日志器
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file1', 'file2'],
+            'propagate': True,
+            'level': 'DEBUG',
+        },
+    }
+}
