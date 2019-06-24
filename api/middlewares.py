@@ -8,10 +8,10 @@ def login_authentication_middleware(func):
 			un_authentication_list = ['/api/login/', '/api/captcha/', '/api/mobile/<str:tel>/']
 			if request.session.get('user'):
 				resp = func(request, *args, **kwargs)
+			elif request.path in un_authentication_list:
+				resp = func(request, *args, **kwargs)
 			else:
 				return JsonResponse(data={'code': 300, 'mes': '请登陆后再试'})
-			if request.path in un_authentication_list:
-				resp = func(request, *args, **kwargs)
 		except Exception:
 			# 记录异常日志
 			resp = redirect('/login/')
