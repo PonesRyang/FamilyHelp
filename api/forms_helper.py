@@ -4,13 +4,10 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 
-
-
 class LoginForm(forms.Form):
     tel = forms.CharField(min_length=11, max_length=11)
     captcha = forms.CharField(min_length=4, max_length=4)
     # phoneCode = forms.CharField(min_length=6, max_length=6)
-
 
     def clean_tel(self):
         tel = self.cleaned_data['tel']

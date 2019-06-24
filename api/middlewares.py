@@ -5,7 +5,7 @@ from django.shortcuts import render, redirect
 def login_authentication_middleware(func):
 	def wrapper(request, *args, **kwargs):
 		try:
-			un_authentication_list = ['/api/login/', '/api/captcha/', '/api/mobile/<str:tel>/']
+			un_authentication_list = ['/api/login/', '/api/captcha/', '/api/mobile/']
 			if request.session.get('user'):
 				resp = func(request, *args, **kwargs)
 			elif request.path in un_authentication_list:
