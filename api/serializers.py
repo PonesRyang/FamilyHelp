@@ -63,14 +63,17 @@ class ArticleSerializer(serializers.ModelSerializer):
 	@staticmethod
 	def get_star(article):
 		queryset = StarArticle.objects.filter(article=article)
-		data = StarArticleSerializer(queryset, many=True).data
-		total = 0
-		for key in data:
-			total += key['star']
-		star = str(total // len(data))
-		if (total % len(data)) >= len(data) // 2:
-			star = '{}.5'.format(star)
-		return star
+		if queryset:
+			data = StarArticleSerializer(queryset, many=True).data
+			total = 0
+			for key in data:
+				total += key['star']
+			star = str(total // len(data))
+			if (total % len(data)) >= len(data) // 2:
+				star = '{}.5'.format(star)
+			return star
+		else:
+			return 0
 
 	class Meta:
 		model = Article
