@@ -336,5 +336,5 @@ class WalletAPIView(ListAPIView):
 	pagination_class = None
 
 	def get_queryset(self):
-		return Wallet.objects.filter(user=self.request.session['users'])
+		return Wallet.objects.filter(users=self.request.session['user'])
 	#
