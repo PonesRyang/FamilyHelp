@@ -300,16 +300,17 @@ def user_info(request):
 @api_view(['POST'])
 def order_finish_or_cancel(request):
 	"""完成订单或者取消订单"""
-	order_number = request.data.get('order_number')
+	order_number = request.POST.get('order_number')
 	status = request.data.get('order_status')
 	order = Orders.objects.filter(order_number=order_number).first()
 	if status == 0:
 		order.order_status = 0
 		order.save()
+		data = {'code': 200, 'message': '取消成功'}
 	else:
 		order.order_status = 1
 		order.save()
-	data = {'code': 200, 'message': '操作成功'}
+		data = {'code': 200, 'message': '操作成功'}
 	return JsonResponse(data=data)
 
 
