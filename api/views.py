@@ -50,7 +50,7 @@ def send_mobile_code(request, tel):
 	#         data = {'code': 404, 'message': '短信验证码服务暂时无法使用'}
 	try:
 		code = '123456'
-		caches['mobile'].set(tel, code)
+		request.session['tel'] = code
 		data = {'code': 200, 'message': '短信验证码已发送成功'}
 	except:
 		data = {'code': 201, 'message': '短信验证码未发送成功'}
@@ -78,9 +78,9 @@ def login(request):
 			tel = form.cleaned_data['tel']
 			user = Users.objects.filter(u_tel=tel).first()
 			if user:
-				code_from_cache = caches['mobile'].get(tel)
-				code_from_user = form.cleaned_data['phoneCode']
-				if code_from_cache == code_from_user:
+				code_from_session = request.session.get('tel')
+				code_from_user = request.POST.get('phoneCode')
+				if code_from_session == code_from_user:
 					request.session['user'] = user
 					data = {'code': 200, 'message': '校验成功'}
 				else:
