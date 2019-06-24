@@ -80,7 +80,7 @@ def login(request):
 			if user:
 				code_from_session = request.session.get('tel')
 				code_from_user = request.POST.get('phoneCode')
-				if code_from_session == code_from_user:
+				if code_from_session == str(code_from_user):
 					request.session['user'] = user
 					data = {'code': 200, 'message': '校验成功'}
 				else:
