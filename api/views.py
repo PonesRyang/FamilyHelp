@@ -227,7 +227,7 @@ class OrderViewsSet(ModelViewSet):
 
 	def get_queryset(self):
 		# u_id = self.request.session['user'].u_id
-		self.queryset = Orders.objects.filter(users=1).all()
+		self.queryset = Orders.objects.filter(users=self.request.session.get('user')).all()
 		return self.queryset
 
 
@@ -322,8 +322,8 @@ def add_star_article(request):
 		new_star = StarArticle()
 		new_star.article = Article.objects.filter(ar_id=request.data.get('article_id')).first()
 		new_star.star = request.data.get('article_star')
-		# new_star.user = request.session['user']
-		new_star.user = Users.objects.filter(u_id=1).first()
+		new_star.user = request.session['user']
+		# new_star.user = Users.objects.filter(u_id=1).first()
 		new_star.save()
 		data = {'code': 200, 'mes': '评价成功'}
 	# except:
