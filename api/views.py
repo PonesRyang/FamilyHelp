@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from time import timezone
 
@@ -72,8 +73,7 @@ def login(request):
 		captcha_from_user = form.cleaned_data['captcha']
 		captcha_from_sess = request.session.get('captcha', '')
 		if captcha_from_sess.lower() != captcha_from_user.lower():
-			hint = '请输入正确的图形验证码'
-			data = {'code': 201, 'message': '验证码不匹配', 'hint': hint}
+			data = {'code': 302, 'message': '验证码不匹配'}
 		else:
 			tel = form.cleaned_data['tel']
 			user = Users.objects.filter(u_tel=tel).first()
@@ -85,17 +85,22 @@ def login(request):
 					data = {'code': 200, 'message': '校验成功'}
 				else:
 					hint = '用户名或验证码错误'
-					data = {'code': 300, 'hint': hint}
+					data = {'code': 300, 'message': hint}
 			else:
 				user = Users()
 				user.u_tel = tel
 				user.u_nickname = '用户{}'.format(uuid.uuid4())
 				user.save()
+				wallet = Wallet()
+				wallet.money_int = 0
+				wallet.money_decimal = 0
+				wallet.save()
+				user.id=wallet
 				request.session['user'] = user
-				data = {'code': 201, 'mes': '用户注册成功，成功登陆'}
+				data = {'code': 201, 'message': '用户注册成功，成功登陆'}
 	else:
 		hint = '请输入有效的登录信息'
-		data = {'code': 301, 'hint': hint}
+		data = {'code': 301, 'message': hint}
 	return JsonResponse(data)
 
 
@@ -288,6 +293,8 @@ def user_info(request):
 	"""完善个人信息（增加用户名和密码）"""
 	user = request.session.get('user')
 	# user = Users.objects.get(u_id=1)
+	if user.u_nickname and user.u_password:
+		return JsonResponse(data={'code': 300, 'mes': '信息已完善，若需修改信息请调用修改信息接口'})
 	form = UserInfoForm(request.POST)
 	if form.is_valid():
 		user.u_nickname = form.cleaned_data['nickname']
@@ -306,11 +313,13 @@ def order_finish_or_cancel(request):
 	status = int(status)
 	if status == 0:
 		order.order_status = 0
+		order.order_finishtime = datetime.datetime.now()
 		order.save()
 		data = {'code': 200, 'message': '取消成功'}
 	else:
 		order.order_status = 1
 		order.save()
+		order.order_finishtime = datetime.datetime.now()
 		data = {'code': 200, 'message': '操作成功'}
 	return JsonResponse(data=data)
 
@@ -337,4 +346,4 @@ class WalletAPIView(ListAPIView):
 
 	def get_queryset(self):
 		return Wallet.objects.filter(users=self.request.session['user'])
-	#
+#
