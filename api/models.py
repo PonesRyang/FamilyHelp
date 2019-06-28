@@ -43,13 +43,13 @@ class Users(models.Model):
     id = models.ForeignKey('Wallet', models.PROTECT, db_column='id', blank=True, null=True)
     u_relname = models.CharField(max_length=128, blank=True, null=True)
     u_nickname = models.CharField(max_length=128)
-    u_password = models.CharField(max_length=20)
+    u_password = models.CharField(max_length=255, null=True)
     u_tel = models.CharField(max_length=11)
     u_birthday = models.DateField(blank=True, null=True)
     u_reg_time = models.DateField(auto_now_add=True, blank=True, null=True)
     u_photo = models.CharField(max_length=256, blank=True, null=True)
     u_point = models.IntegerField(blank=True, null=True)
-    star_lv = models.IntegerField()
+    star_lv = models.IntegerField(blank=True, null=True)
     role = models.ManyToManyField('Roles',through='Userrole' )
     order = models.ManyToManyField('Orders', through='UserOrderList')
     comment = models.ManyToManyField('Comment', through='UserComment')
@@ -102,7 +102,6 @@ class OrderType(models.Model):
 
 class Orders(models.Model):
     order_id = models.AutoField(primary_key=True)
-    u = models.ForeignKey(Users, models.PROTECT)
     order_type = models.ForeignKey(OrderType, models.PROTECT, blank=True, null=True)
     order_number = models.CharField(max_length=128)
     order_status = models.IntegerField()
