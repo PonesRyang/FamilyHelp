@@ -116,6 +116,7 @@ class Orders(models.Model):
     order_tips = models.CharField(max_length=128, blank=True, null=True)
     complain = models.ManyToManyField(Complain, through='OrderComplain')
     district = models.ForeignKey('District', models.PROTECT, blank=True, null=True)
+    order_money = models.IntegerField()
 
     class Meta:
         managed = False
