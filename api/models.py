@@ -53,6 +53,7 @@ class Users(models.Model):
     role = models.ManyToManyField('Roles',through='Userrole' )
     order = models.ManyToManyField('Orders', through='UserOrderList')
     comment = models.ManyToManyField('Comment', through='UserComment')
+    id_card = models.CharField(max_length=30,null=True)
 
     class Meta:
         managed = False
