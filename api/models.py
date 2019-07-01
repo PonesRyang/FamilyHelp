@@ -55,7 +55,6 @@ class Users(models.Model):
     star_lv = models.IntegerField(blank=True, null=True)
     role = models.ManyToManyField('Roles',through='Userrole' )
     order = models.ManyToManyField('Orders', through='UserOrderList')
-    comment = models.ManyToManyField('Comment', through='UserComment')
     id_card = models.CharField(max_length=30,null=True)
 
     class Meta:
@@ -65,6 +64,7 @@ class Users(models.Model):
 
 class Comment(models.Model):
     order = models.ForeignKey('Orders', models.PROTECT, blank=True, null=True)
+    user = models.ForeignKey('Users', models.PROTECT, blank=True, null=True)
     content = models.CharField(max_length=512, blank=True, null=True)
     content_star = models.IntegerField()
     is_delete = models.IntegerField(blank=True, null=True)
@@ -116,6 +116,7 @@ class Orders(models.Model):
     order_tips = models.CharField(max_length=128, blank=True, null=True)
     complain = models.ManyToManyField(Complain, through='OrderComplain')
     district = models.ForeignKey('District', models.PROTECT, blank=True, null=True)
+    order_money = models.IntegerField()
 
     class Meta:
         managed = False
@@ -140,17 +141,6 @@ class Roles(models.Model):
     class Meta:
         managed = False
         db_table = 'roles'
-
-
-class UserComment(models.Model):
-    ucid = models.AutoField(primary_key=True)
-    co = models.ForeignKey(Comment, models.PROTECT, db_column='co_id')
-    u = models.ForeignKey(Users, models.PROTECT, db_column='u_id')
-
-    class Meta:
-        managed = False
-        db_table = 'user_comment'
-        unique_together = (('co', 'u'),)
 
 
 class UserOrderList(models.Model):
