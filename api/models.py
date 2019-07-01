@@ -9,33 +9,36 @@ from django.db import models
 
 
 class Relationship17(models.Model):
-    id = models.ForeignKey('Complain', models.PROTECT, db_column='id', primary_key=True)
-    u = models.ForeignKey('Users', models.PROTECT)
+    reid = models.AutoField(primary_key=True)
+    co = models.ForeignKey('Complain', models.PROTECT, db_column='co_id')
+    u = models.ForeignKey('Users', models.PROTECT, db_column='u_id')
 
     class Meta:
         managed = False
         db_table = 'Relationship_17'
-        unique_together = (('id', 'u'),)
+        unique_together = (('co', 'u'),)
 
 
 class Rolepermissions(models.Model):
-    per = models.ForeignKey('Permission', models.PROTECT, db_column='per_ID', primary_key=True)  # Field name made lowercase.
-    id = models.ForeignKey('Roles', models.PROTECT, db_column='ID')  # Field name made lowercase.
+    rpid = models.AutoField(primary_key=True)
+    per = models.ForeignKey('Permission', models.PROTECT, db_column='per_id')  # Field name made lowercase.
+    role = models.ForeignKey('Roles', models.PROTECT, db_column='ro_id')  # Field name made lowercase.
 
     class Meta:
         managed = False
         db_table = 'RolePermissions'
-        unique_together = (('per', 'id'),)
+        unique_together = (('per', 'role'),)
 
 
 class Userrole(models.Model):
-    id = models.ForeignKey('Roles', models.PROTECT, db_column='ID', primary_key=True)  # Field name made lowercase.
-    u = models.ForeignKey('Users', models.PROTECT)
+    urid = models.AutoField(primary_key=True)
+    role = models.ForeignKey('Roles', models.PROTECT, db_column='ro_id')  # Field name made lowercase.
+    user = models.ForeignKey('Users', models.PROTECT, db_column='u_id')
 
     class Meta:
         managed = False
         db_table = 'UserRole'
-        unique_together = (('id', 'u'),)
+        unique_together = (('role', 'user'),)
 
 
 class Users(models.Model):
@@ -52,7 +55,6 @@ class Users(models.Model):
     star_lv = models.IntegerField(blank=True, null=True)
     role = models.ManyToManyField('Roles',through='Userrole' )
     order = models.ManyToManyField('Orders', through='UserOrderList')
-    comment = models.ManyToManyField('Comment', through='UserComment')
     id_card = models.CharField(max_length=30,null=True)
 
     class Meta:
@@ -62,6 +64,7 @@ class Users(models.Model):
 
 class Comment(models.Model):
     order = models.ForeignKey('Orders', models.PROTECT, blank=True, null=True)
+    user = models.ForeignKey('Users', models.PROTECT, blank=True, null=True)
     content = models.CharField(max_length=512, blank=True, null=True)
     content_star = models.IntegerField()
     is_delete = models.IntegerField(blank=True, null=True)
@@ -81,13 +84,14 @@ class Complain(models.Model):
 
 
 class OrderComplain(models.Model):
-    id = models.ForeignKey(Complain, models.PROTECT, db_column='id', primary_key=True)
-    order = models.ForeignKey('Orders', models.PROTECT)
+    oc_id = models.AutoField(primary_key=True)
+    complain = models.ForeignKey(Complain, models.PROTECT, db_column='co_id')
+    order = models.ForeignKey('Orders', models.PROTECT, db_column='or_id')
 
     class Meta:
         managed = False
         db_table = 'order_complain'
-        unique_together = (('id', 'order'),)
+        unique_together = (('complain', 'order'),)
 
 
 class OrderType(models.Model):
@@ -112,6 +116,7 @@ class Orders(models.Model):
     order_tips = models.CharField(max_length=128, blank=True, null=True)
     complain = models.ManyToManyField(Complain, through='OrderComplain')
     district = models.ForeignKey('District', models.PROTECT, blank=True, null=True)
+    order_money = models.IntegerField()
 
     class Meta:
         managed = False
@@ -138,19 +143,10 @@ class Roles(models.Model):
         db_table = 'roles'
 
 
-class UserComment(models.Model):
-    id = models.ForeignKey(Comment, models.PROTECT, db_column='id', primary_key=True)
-    u = models.ForeignKey(Users, models.PROTECT)
-
-    class Meta:
-        managed = False
-        db_table = 'user_comment'
-        unique_together = (('id', 'u'),)
-
-
 class UserOrderList(models.Model):
-    order = models.ForeignKey(Orders, models.PROTECT, primary_key=True)
-    u = models.ForeignKey(Users, models.PROTECT)
+    uoid = models.AutoField(primary_key=True)
+    order = models.ForeignKey(Orders, models.PROTECT,db_column='or_id')
+    u = models.ForeignKey(Users, models.PROTECT, db_column='u_id')
 
     class Meta:
         managed = False
@@ -179,6 +175,4 @@ class District(models.Model):
 
     class Meta:
         db_table = 'tb_district'
-
-
 
