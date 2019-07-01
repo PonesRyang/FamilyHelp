@@ -43,7 +43,7 @@ class Users(models.Model):
     id = models.ForeignKey('Wallet', models.PROTECT, db_column='id', blank=True, null=True)
     u_relname = models.CharField(max_length=128, blank=True, null=True)
     u_nickname = models.CharField(max_length=128)
-    u_password = models.CharField(max_length=20)
+    u_password = models.CharField(max_length=255)
     u_tel = models.CharField(max_length=11)
     u_birthday = models.DateField(blank=True, null=True)
     u_reg_time = models.DateField(auto_now_add=True, blank=True, null=True)
