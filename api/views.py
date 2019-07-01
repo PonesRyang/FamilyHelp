@@ -8,7 +8,7 @@ from rest_framework.decorators import api_view
 from api.models import Users
 
 
-@api_view(['PUT'])
+@api_view(['POST'])
 def change_information(request):
 	u_tel = request.data.get('u_tel')
 	u_birthday = request.data.get('u_birthday')
@@ -26,13 +26,13 @@ def change_information(request):
 	return JsonResponse(data=data)
 
 
-@api_view(['DELETE'])
+@api_view(['POST'])
 def logout(request):
 	request.session.clear()
-	return JsonResponse(data={'code': 200, 'back_url': 'index/'})
+	return JsonResponse(data={'code': 200, 'back_url': '   /'})
 
 
-@api_view(['PUT'])
+@api_view(['POST'])
 def check_card_id(request):
 	card_id = request.data.get('card_id')
 	u_relname = request.data.get('u_relname')
