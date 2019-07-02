@@ -43,14 +43,17 @@ class Users(models.Model):
     id = models.ForeignKey('Wallet', models.PROTECT, db_column='id', blank=True, null=True)
     u_relname = models.CharField(max_length=128, blank=True, null=True)
     u_nickname = models.CharField(max_length=128)
-    u_password = models.CharField(max_length=20)
+    u_password = models.CharField(max_length=255)
     u_tel = models.CharField(max_length=11)
     u_birthday = models.DateField(blank=True, null=True)
     u_reg_time = models.DateField(auto_now_add=True, blank=True, null=True)
     u_photo = models.CharField(max_length=256, blank=True, null=True)
     u_point = models.IntegerField(blank=True, null=True)
     star_lv = models.IntegerField()
-    role = models.ManyToManyField('Roles',through='Userrole' )
+    id_card = models.CharField(max_length=30, null=True)
+    u_intro = models.CharField(max_length=512, null=True)
+
+    role = models.ManyToManyField('Roles', through='Userrole')
     order = models.ManyToManyField('Orders', through='UserOrderList')
     comment = models.ManyToManyField('Comment', through='UserComment')
 
@@ -172,7 +175,6 @@ class District(models.Model):
     distid = models.IntegerField(primary_key=True)
     parent = models.ForeignKey(to='self', on_delete=models.PROTECT, db_column='pid', blank=True, null=True)
     name = models.CharField(max_length=255)
-
 
     def __str__(self):
         return self.name
