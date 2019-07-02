@@ -8,7 +8,7 @@ from api.views import ArticleAPIView,OrderViewsSet, comments, complain
 urlpatterns = [
     path('personal_information/', views.change_information),
     path('logout/', views.logout),
-    path('article/', ArticleAPIView.as_view())
+    path('article/', ArticleAPIView.as_view()),
     path('comment/', comments),
     path('complain/', complain),
 ]
