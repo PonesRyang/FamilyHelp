@@ -4,8 +4,10 @@ from django.shortcuts import render
 
 # Create your views here.
 from rest_framework.decorators import api_view
+from rest_framework.generics import ListAPIView
 
-from api.models import Users
+from api.models import Users, Article
+from api.serializers import ArticleSerializer
 
 
 @api_view(['POST'])
@@ -47,3 +49,9 @@ def check_card_id(request):
 	else:  # 如果返回失败
 		data = {'code': 400, 'mes': '认证失败'}
 	return JsonResponse(data)
+
+
+class ArticleAPIView(ListAPIView):
+	queryset = Article.objects.all()
+	serializer_class = ArticleSerializer
+	pagination_class = None
