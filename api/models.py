@@ -20,46 +20,46 @@ class Relationship17(models.Model):
 
 
 class Rolepermissions(models.Model):
-    rpid = models.AutoField(primary_key=True)
-    per = models.ForeignKey('Permission', models.PROTECT, db_column='per_id')  # Field name made lowercase.
-    role = models.ForeignKey('Roles', models.PROTECT, db_column='ro_id')  # Field name made lowercase.
+	  rpid = models.AutoField(primary_key=True)
+  	per = models.ForeignKey('Permission', models.PROTECT, db_column='per_id')  # Field name made lowercase.
+  	role = models.ForeignKey('Roles', models.PROTECT, db_column='ro_id')  # Field name made lowercase.
 
-    class Meta:
-        managed = False
-        db_table = 'RolePermissions'
-        unique_together = (('per', 'role'),)
+	  class Meta:
+		    managed = False
+		    db_table = 'RolePermissions'
+		    unique_together = (('per', 'role'),)
 
 
 class Userrole(models.Model):
-    urid = models.AutoField(primary_key=True)
-    role = models.ForeignKey('Roles', models.PROTECT, db_column='ro_id')  # Field name made lowercase.
-    user = models.ForeignKey('Users', models.PROTECT, db_column='u_id')
+  	urid = models.AutoField(primary_key=True)
+  	role = models.ForeignKey('Roles', models.PROTECT, db_column='ro_id')  # Field name made lowercase.
+  	user = models.ForeignKey('Users', models.PROTECT, db_column='u_id')
 
-    class Meta:
-        managed = False
-        db_table = 'UserRole'
-        unique_together = (('role', 'user'),)
+  	class Meta:
+	    	managed = False
+		    db_table = 'UserRole'
+		    unique_together = (('role', 'user'),)
 
 
 class Users(models.Model):
-    u_id = models.AutoField(primary_key=True)
-    id = models.ForeignKey('Wallet', models.PROTECT, db_column='id', blank=True, null=True)
-    u_relname = models.CharField(max_length=128, blank=True, null=True)
-    u_nickname = models.CharField(max_length=128)
-    u_password = models.CharField(max_length=255, null=True)
-    u_tel = models.CharField(max_length=11)
-    u_birthday = models.DateField(blank=True, null=True)
-    u_reg_time = models.DateField(auto_now_add=True, blank=True, null=True)
-    u_photo = models.CharField(max_length=256, blank=True, null=True)
-    u_point = models.IntegerField(blank=True, null=True)
-    star_lv = models.IntegerField(blank=True, null=True)
-    role = models.ManyToManyField('Roles',through='Userrole' )
-    order = models.ManyToManyField('Orders', through='UserOrderList')
-    id_card = models.CharField(max_length=30,null=True)
+      u_id = models.AutoField(primary_key=True)
+      id = models.ForeignKey('Wallet', models.PROTECT, db_column='id', blank=True, null=True)
+      u_relname = models.CharField(max_length=128, blank=True, null=True)
+      u_nickname = models.CharField(max_length=128)
+      u_password = models.CharField(max_length=255, null=True)
+      u_tel = models.CharField(max_length=11)
+      u_birthday = models.DateField(blank=True, null=True)
+      u_reg_time = models.DateField(auto_now_add=True, blank=True, null=True)
+      u_photo = models.CharField(max_length=256, blank=True, null=True)
+      u_point = models.IntegerField(blank=True, null=True)
+      star_lv = models.IntegerField(blank=True, null=True)
+      role = models.ManyToManyField('Roles',through='Userrole' )
+      order = models.ManyToManyField('Orders', through='UserOrderList')
+      id_card = models.CharField(max_length=30,null=True)
 
-    class Meta:
-        managed = False
-        db_table = 'Users'
+      class Meta:
+          managed = False
+          db_table = 'Users'
 
 
 class Comment(models.Model):
@@ -69,9 +69,9 @@ class Comment(models.Model):
     content_star = models.IntegerField()
     is_delete = models.IntegerField(blank=True, null=True)
 
-    class Meta:
-        managed = False
-        db_table = 'comment'
+  	class Meta:
+	    	managed = False
+	  	  db_table = 'comment'
 
 
 class Complain(models.Model):
@@ -138,14 +138,16 @@ class Roles(models.Model):
     r_code = models.CharField(max_length=10, blank=True, null=True)
     permission = models.ManyToManyField(Permission, through='Rolepermissions')
 
+
     class Meta:
         managed = False
         db_table = 'roles'
 
 
+
 class UserOrderList(models.Model):
     uoid = models.AutoField(primary_key=True)
-    order = models.ForeignKey(Orders, models.PROTECT,db_column='or_id')
+    order = models.ForeignKey(Orders, models.PROTECT, db_column='or_id')
     u = models.ForeignKey(Users, models.PROTECT, db_column='u_id')
 
     class Meta:
@@ -164,15 +166,54 @@ class Wallet(models.Model):
 
 
 class District(models.Model):
-    """地区"""
-    distid = models.IntegerField(primary_key=True)
-    parent = models.ForeignKey(to='self', on_delete=models.PROTECT, db_column='pid', blank=True, null=True)
-    name = models.CharField(max_length=255)
+	"""地区"""
+	distid = models.IntegerField(primary_key=True)
+	parent = models.ForeignKey(to='self', on_delete=models.PROTECT, db_column='pid', blank=True, null=True)
+	name = models.CharField(max_length=255)
+
+	def __str__(self):
+		return self.name
+
+	class Meta:
+		db_table = 'tb_district'
 
 
-    def __str__(self):
-        return self.name
+class Article(models.Model):
+	"""文章"""
+	ar_id = models.AutoField(primary_key=True)
+	ar_name = models.CharField(max_length=128)
+	ar_content = models.TextField()
+	ar_tag = models.ManyToManyField('Tags', through='ArticleTags')
 
-    class Meta:
-        db_table = 'tb_district'
+	class Meta:
+		db_table = 'tb_article'
+
+
+class ArticleTags(models.Model):
+	"""文章类型中间表"""
+	at_id = models.AutoField(primary_key=True)
+	article = models.ForeignKey(to=Article, on_delete=models.PROTECT, db_column='ar_id', blank=True, null=True)
+	tag = models.ForeignKey(to='Tags', on_delete=models.PROTECT, db_column='tag_id', blank=True, null=True)
+
+	class Meta:
+		db_table = 'article_tags'
+		unique_together = (('article', 'tag'),)
+
+
+class Tags(models.Model):
+	tag_id = models.AutoField(primary_key=True)
+	tag_name = models.CharField(max_length=128)
+
+	class Meta:
+		db_table = 'tags'
+
+
+class StarArticle(models.Model):
+	sa_id = models.AutoField(primary_key=True)
+	star = models.IntegerField()
+	user = models.ForeignKey(to=Users, on_delete=models.PROTECT, db_column='u_id', blank=True, null=True)
+	article = models.ForeignKey(to=Article, on_delete=models.PROTECT, db_column='ar_id', blank=True, null=True)
+
+	class Meta:
+		db_table = 'star_article'
 
