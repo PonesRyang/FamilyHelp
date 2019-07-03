@@ -1,6 +1,5 @@
 import django_filters
-
-from api.models import Roles, Users
+from api.models import Roles, Users,Orders
 from django.db.models import Q
 
 
@@ -14,3 +13,13 @@ class StarStaffFilterSet(django_filters.FilterSet):
         return queryset.filter(Q(u_relnam__icontains=value)) | Q(u_tel=value)
 
 
+class OrderFilterSet(django_filters.FilterSet):
+    user = django_filters.NumberFilter(method='filter_by_user')
+
+    @staticmethod
+    def filter_by_user(queryset, name, value):
+        return queryset.filter(u=value)
+
+    class Meta:
+        model = Orders
+        fields = ('user', )
