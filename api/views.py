@@ -1,11 +1,15 @@
 import uuid
 from time import timezone
 
+from captcha import Captcha
+from utils import random_captcha_text, random_mobile_code, send_code_by_sms
+from django.core.cache import caches
+from api.forms_helper import LoginForm
 from rest_framework.response import Response
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from hashlib import md5
 from django.db.transaction import atomic
-from django.http import JsonResponse
+from django.http import JsonResponse,ttpResponse
 from rest_framework.decorators import api_view
 
 from rest_framework.generics import ListAPIView, RetrieveAPIView
@@ -18,6 +22,63 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
 from api.filters import OrderFilterSet, StarStaffFilterSet
 from api.forms import UserInfoForm
+
+
+def get_captcha(request):
+	""" 验证码 """
+    captcha_text = random_captcha_text()
+    request.session['captcha'] = captcha_text
+    image_data = Captcha.instance().generate(captcha_text)
+    return HttpResponse(image_data, content_type='image/png')
+
+def send_mobile_code(request, tel):
+    """发送短信验证码"""
+    code = random_mobile_code()
+    if tel in caches['mobile']:
+        data = {'code': 403, 'message': '请不要在120秒内重复发送'}
+    else:
+        result = send_code_by_sms(tel, code)
+        if result['error'] == 0:
+            # 将手机验证码保存到缓存中
+            caches['mobile'].set(tel, code, timeout=120)
+            data = {'code': 200, 'message': '短信验证码已发送'}
+        else:
+            data = {'code': 404, 'message': '短信验证码服务暂时无法使用'}
+    return JsonResponse(data)
+
+
+
+# @api_view(['GET','POST'])
+# def register(request):
+# 	if request.method=='GET':
+# 		pass
+# 	if request.method=='POST':
+# 		pass
+
+
+
+@api_view(['GET','POST'])
+def login(request):
+    if request.method=='GET':
+        return render(request, 'login.html')
+    if request.method=='POST':
+        form  = LoginForm(request.POST)
+        if form.is_valid():
+            captcha_from_user = form.cleaned_data['captcha']
+            captcha_from_sess = request.session.get('captcha', '')
+            if captcha_from_sess.lower() != captcha_from_user.lower():
+                hint = '请输入正确的图形验证码'
+            else:
+                tel = form.cleaned_data['tel']
+                # user = User.objects.filter(tel=tel).first()
+                # if tel:
+                # request.session['user'] = user
+                return HttpResponse('跳转首页成功')
+              # else:
+              # 	hint = '用户名或密码错误'
+        else:
+            hint = '请输入有效的登录信息'
+    return render(request, 'login.html', {'hint': hint})
 
 
 class DistrictViewSet(ListAPIView):
@@ -87,6 +148,7 @@ class DistrictView(RetrieveAPIView):
 	"""查看各省的id,名称,介绍及其下各市区的id和名称"""
 	queryset = District.objects.all()
 	serializer_class = DistrictDetailSerializer
+
 
 
 @api_view(['POST'])
