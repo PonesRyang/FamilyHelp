@@ -1,15 +1,24 @@
+import uuid
+from time import timezone
+
+from captcha import Captcha
+from utils import random_captcha_text, random_mobile_code, send_code_by_sms
+from django.core.cache import caches
+from api.forms_helper import LoginForm
 from rest_framework.response import Response
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from hashlib import md5
 from django.db.transaction import atomic
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework.decorators import api_view
 
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District
+
+from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, StarArticle
 from api.serializers import ArticleSerializer, OrderDetailSerializer, StarStaffSerializer, OrdersTypeSerializer, \
-    DistrictSimpleSerializer, \
-    DistrictDetailSerializer
+	DistrictSimpleSerializer, \
+	DistrictDetailSerializer
+
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
@@ -17,23 +26,112 @@ from api.filters import OrderFilterSet, StarStaffFilterSet
 from api.forms import UserInfoForm
 
 
-class StarStaffView(ListAPIView):
-    """查看星级家政人员"""
-    queryset = Users.objects.all()
-    serializer_class = StarStaffSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_class = StarStaffFilterSet
+def get_captcha(request):
+	""" 验证码 """
+	captcha_text = random_captcha_text()
+	request.session['captcha'] = captcha_text
+	image_data = Captcha.instance().generate(captcha_text)
+	return HttpResponse(image_data, content_type='image/png')
 
-    def get_queryset(self):
-        role = Roles.objects.filter(r_code=1)
-        queryset = Users.objects.filter(role=role)
-        return queryset
+
+def send_mobile_code(request, tel):
+	"""发送短信验证码"""
+	code = random_mobile_code()
+	if tel in caches['mobile']:
+		data = {'code': 403, 'message': '请不要在120秒内重复发送'}
+	else:
+		result = send_code_by_sms(tel, code)
+		if result['error'] == 0:
+			# 将手机验证码保存到缓存中
+			caches['mobile'].set(tel, code, timeout=120)
+			data = {'code': 200, 'message': '短信验证码已发送'}
+		else:
+			data = {'code': 404, 'message': '短信验证码服务暂时无法使用'}
+	return JsonResponse(data)
+
+
+# @api_view(['GET','POST'])
+# def register(request):
+# 	if request.method=='GET':
+# 		pass
+# 	if request.method=='POST':
+# 		pass
+
+
+@api_view(['GET', 'POST'])
+def login(request):
+	if request.method == 'GET':
+		return render(request, 'login.html')
+	if request.method == 'POST':
+		form = LoginForm(request.POST)
+		if form.is_valid():
+			captcha_from_user = form.cleaned_data['captcha']
+			captcha_from_sess = request.session.get('captcha', '')
+			if captcha_from_sess.lower() != captcha_from_user.lower():
+				hint = '请输入正确的图形验证码'
+			else:
+				tel = form.cleaned_data['tel']
+				# user = User.objects.filter(tel=tel).first()
+				# if tel:
+				# request.session['user'] = user
+				return HttpResponse('跳转首页成功')
+			# else:
+			# 	hint = '用户名或密码错误'
+		else:
+			hint = '请输入有效的登录信息'
+	return render(request, 'login.html', {'hint': hint})
+
+
+class DistrictViewSet(ListAPIView):
+	queryset = District.objects.all()
+	serializer_class = DistrictSimpleSerializer
+
+
+@api_view(['POST'])
+def SubmitList(request):
+	order_addr = request.data.get('order_addr')
+	order_plantime = request.data.get('order_plantime')
+	district = request.data.get('district')
+	district1 = District.objects.get(name=district)
+	user = request.session.get('user')
+	if order_addr and order_plantime:
+		current_time = timezone.now()
+		order = Orders()
+		order.order_addr = order_addr
+		order.order_plantime = order_plantime
+		order.order_createtime = current_time
+		order.district = district1
+		order.u = user
+		order.order_status = 2
+		order.order_number = uuid.uuid4().hex
+		order.save()
+		data = {
+			'code': 200, 'message': '订单已生成'
+		}
+	else:
+		data = {
+			'code': 300, 'message': '订单地址不能为空'
+		}
+	return Response(data)
+
+
+class StarStaffView(ListAPIView):
+	"""查看星级家政人员"""
+	queryset = Users.objects.all()
+	serializer_class = StarStaffSerializer
+	filter_backends = (DjangoFilterBackend, OrderingFilter)
+	filter_class = StarStaffFilterSet
+
+	def get_queryset(self):
+		role = Roles.objects.filter(r_code=1)
+		queryset = Users.objects.filter(role=role)
+		return queryset
 
 
 class OrdersTypeViewSet(ModelViewSet):
-    queryset = OrderType.objects.all()
-    serializer_class = OrdersTypeSerializer
-    pagination_class = None
+	queryset = OrderType.objects.all()
+	serializer_class = OrdersTypeSerializer
+	pagination_class = None
 
 
 # 获取所有省级行政单位 - GET /api/districts/
@@ -46,11 +144,12 @@ class ProvinceView(ListAPIView):
     pagination_class = None
 
 
+
 # 获取指定行政单位详情及其管辖的行政单位 - GET /api/districts/{行政单位编号}
 class DistrictView(RetrieveAPIView):
-    """查看各省的id,名称,介绍及其下各市区的id和名称"""
-    queryset = District.objects.all()
-    serializer_class = DistrictDetailSerializer
+	"""查看各省的id,名称,介绍及其下各市区的id和名称"""
+	queryset = District.objects.all()
+	serializer_class = DistrictDetailSerializer
 
 
 @api_view(['POST'])
@@ -158,37 +257,54 @@ def complain(request):
     return JsonResponse(data)
 
 
+
 def to_md5_hex(origin_str):
-    """生成MD5摘要"""
-    password = md5(origin_str.encode('utf-8')).hexdigest()
-    return password
+	"""生成MD5摘要"""
+	password = md5(origin_str.encode('utf-8')).hexdigest()
+	return password
 
 
 @api_view(['POST'])
 def user_info(request):
-    """完善个人信息（增加用户名和密码）"""
-    user = request.session.get('user')
-    # user = Users.objects.get(u_id=1)
-    form = UserInfoForm(request.POST)
-    if form.is_valid():
-        user.u_nickname = form.cleaned_data['nickname']
-        user.u_password = to_md5_hex(form.cleaned_data['password'])
-        user.save()
-        data = {'code': 200, 'message': '操作成功'}
-        return JsonResponse(data=data)
+	"""完善个人信息（增加用户名和密码）"""
+	user = request.session.get('user')
+	# user = Users.objects.get(u_id=1)
+	form = UserInfoForm(request.POST)
+	if form.is_valid():
+		user.u_nickname = form.cleaned_data['nickname']
+		user.u_password = to_md5_hex(form.cleaned_data['password'])
+		user.save()
+		data = {'code': 200, 'message': '操作成功'}
+		return JsonResponse(data=data)
 
 
 @api_view(['POST'])
 def order_finish_or_cancel(request):
-    """完成订单或者取消订单"""
-    order_number = request.data.get('order_number')
-    status = request.data.get('order_status')
-    order = Orders.objects.filter(order_number=order_number).first()
-    if status == 0:
-        order.order_status = 0
-        order.save()
-    else:
-        order.order_status = 1
-        order.save()
-    data = {'code': 200, 'message': '操作成功'}
-    return JsonResponse(data=data)
+	"""完成订单或者取消订单"""
+	order_number = request.data.get('order_number')
+	status = request.data.get('order_status')
+	order = Orders.objects.filter(order_number=order_number).first()
+	if status == 0:
+		order.order_status = 0
+		order.save()
+	else:
+		order.order_status = 1
+		order.save()
+	data = {'code': 200, 'message': '操作成功'}
+	return JsonResponse(data=data)
+
+
+@api_view(['POST'])
+def add_star_article(request):
+	# try:
+	with atomic():
+		new_star = StarArticle()
+		new_star.article = Article.objects.filter(ar_id=request.data.get('article_id')).first()
+		new_star.star = request.data.get('article_star')
+		# new_star.user = request.session['user']
+		new_star.user = Users.objects.filter(u_id=1).first()
+		new_star.save()
+		data = {'code': 200, 'mes': '评价成功'}
+	# except:
+	# 	data = {'code':400,'mes':'评价失败，请重试'}
+	return JsonResponse(data)
