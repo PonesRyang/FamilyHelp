@@ -89,6 +89,7 @@ def login(request):
             else:
                 with atomic():
                     wallet = Wallet()
+                    wallet.save()
                     user = Users()
                     user.id = wallet
                     user.u_tel = tel
