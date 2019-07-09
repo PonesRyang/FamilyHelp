@@ -154,8 +154,8 @@ class UserOrderList(models.Model):
 
 
 class Wallet(models.Model):
-	money_int = models.IntegerField()
-	money_decimal = models.IntegerField()
+	money_int = models.IntegerField(default=0)
+	money_decimal = models.IntegerField(default=0)
 
 	class Meta:
 		managed = False
