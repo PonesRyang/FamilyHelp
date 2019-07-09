@@ -88,6 +88,8 @@ def login(request):
                     data = {'code': 300, 'message': hint}
             else:
                 with atomic():
+                    wallet = Wallet()
+                    user.id = wallet
                     user = Users()
                     user.u_tel = tel
                     user.u_nickname = '用户{}'.format(uuid.uuid4())
