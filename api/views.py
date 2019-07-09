@@ -100,11 +100,6 @@ def login(request):
                     user_role.role = role
                     user_role.user = user
                     user_role.save()
-                    wallet = Wallet()
-                    wallet.money_int = 0
-                    wallet.money_decimal = 0
-                    wallet.save()
-                    user.id = wallet
                     request.session['user'] = user
                     data = {'code': 201, 'message': '用户注册成功，成功登陆'}
     else:
