@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 
 from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, \
-    StarArticle, Wallet, UserOrderList
+    StarArticle, Wallet, UserOrderList, Userrole
 from api.serializers import ArticleSerializer, OrderDetailSerializer, StarStaffSerializer, OrdersTypeSerializer, \
     DistrictSimpleSerializer, \
     DistrictDetailSerializer, WalletSerializer
@@ -87,19 +87,23 @@ def login(request):
                     hint = '用户名或验证码错误'
                     data = {'code': 300, 'message': hint}
             else:
-                user = Users()
-                user.u_tel = tel
-                user.u_nickname = '用户{}'.format(uuid.uuid4())
-                role = Roles.objects.filter(id=1).first()
-                user.role = role
-                user.save()
-                wallet = Wallet()
-                wallet.money_int = 0
-                wallet.money_decimal = 0
-                wallet.save()
-                user.id = wallet
-                request.session['user'] = user
-                data = {'code': 201, 'message': '用户注册成功，成功登陆'}
+                with atomic():
+                    user = Users()
+                    user.u_tel = tel
+                    user.u_nickname = '用户{}'.format(uuid.uuid4())
+                    role = Roles.objects.filter(id=1).first()
+                    user_role = Userrole()
+                    user_role.role = role
+                    user_role.user = user
+                    user.save()
+                    user_role.save()
+                    wallet = Wallet()
+                    wallet.money_int = 0
+                    wallet.money_decimal = 0
+                    wallet.save()
+                    user.id = wallet
+                    request.session['user'] = user
+                    data = {'code': 201, 'message': '用户注册成功，成功登陆'}
     else:
         hint = '请输入有效的登录信息'
         data = {'code': 301, 'message': hint}
