@@ -114,23 +114,22 @@ def SubmitList(request):
 	order_addr = request.data.get('order_addr')
 	order_plantime = request.data.get('order_plantime')
 	district = request.data.get('district')
-	district1 = District.objects.get(name=district)
+	order_money = request.data.get('order_money')
+	district1 = District.objects.filter(name=district).first()
 	user = request.session.get('user')
 	if order_addr and order_plantime:
-		current_time = timezone.now()
 		order = Orders()
+		order.order_money = order_money
 		order.order_addr = order_addr
 		order.order_plantime = order_plantime
-		order.order_createtime = current_time
 		order.district = district1
+		order.order_status = 2
+		order.order_number = uuid.uuid4().hex
+		order.save()
 		user_order = UserOrderList()
 		user_order.u = user
 		user_order.order = order
 		user_order.save()
-		order.u = user
-		order.order_status = 2
-		order.order_number = uuid.uuid4().hex
-		order.save()
 		data = {
 			'code': 200, 'message': '订单已生成'
 		}
