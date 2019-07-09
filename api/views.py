@@ -91,11 +91,11 @@ def login(request):
                     user = Users()
                     user.u_tel = tel
                     user.u_nickname = '用户{}'.format(uuid.uuid4())
+                    user.save()
                     role = Roles.objects.filter(id=1).first()
                     user_role = Userrole()
                     user_role.role = role
                     user_role.user = user
-                    user.save()
                     user_role.save()
                     wallet = Wallet()
                     wallet.money_int = 0
