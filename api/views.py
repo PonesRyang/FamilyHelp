@@ -248,13 +248,14 @@ class OrderViewsSet(ModelViewSet):
 def comments(request):
     try:
         user = request.session['user']
-        order = request.data.get('order_id', '')
+        order_number = request.data.get('order_number', None)
+        order = Orders.objects.filter(order_number=order_number).first()
         content_star = request.data.get('content_star', '')
         content = request.data.get('content', '')
         with atomic():
             comment = Comment()
-            comment.user_id = user
-            comment.order_id = order
+            comment.user = user
+            comment.order = order
             comment.content = content
             comment.content_star = content_star
             comment.save()
