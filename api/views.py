@@ -1,22 +1,152 @@
 import datetime
+import uuid
+from time import timezone
 
+from captcha import Captcha
+from utils import random_captcha_text, random_mobile_code, send_code_by_sms
+from django.core.cache import caches
+from api.forms_helper import LoginForm
 from rest_framework.response import Response
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from hashlib import md5
 from django.db.transaction import atomic
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from rest_framework.decorators import api_view
 
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District
+
+from api.models import Users, Article, Comment, Complain, OrderComplain, Orders, Roles, OrderType, District, \
+    StarArticle, Wallet, UserOrderList, Userrole
 from api.serializers import ArticleSerializer, OrderDetailSerializer, StarStaffSerializer, OrdersTypeSerializer, \
     DistrictSimpleSerializer, \
-    DistrictDetailSerializer
+    DistrictDetailSerializer, WalletSerializer
+
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.viewsets import ModelViewSet
 from api.filters import OrderFilterSet, StarStaffFilterSet
 from api.forms import UserInfoForm
+
+
+def get_captcha(request):
+    """ 验证码 """
+    captcha_text = random_captcha_text()
+    request.session['captcha'] = '1234'
+    image_data = Captcha.instance().generate(captcha_text)
+    return HttpResponse(image_data, content_type='image/png')
+
+
+def send_mobile_code(request, tel):
+    """发送短信验证码"""
+    # code = random_mobile_code()
+    # if tel in caches['mobile']:
+    #     data = {'code': 403, 'message': '请不要在120秒内重复发送'}
+    # else:
+    #     result = send_code_by_sms(tel, code)
+    #     if result['error'] == 0:
+    #         # 将手机验证码保存到缓存中
+    #         caches['mobile'].set(tel, code, timeout=120)
+    #         data = {'code': 200, 'message': '短信验证码已发送'}
+    #     else:
+    #         data = {'code': 404, 'message': '短信验证码服务暂时无法使用'}
+    try:
+        code = '123456'
+        request.session['tel'] = code
+        data = {'code': 200, 'message': '短信验证码已发送成功'}
+    except:
+        data = {'code': 201, 'message': '短信验证码未发送成功'}
+    return JsonResponse(data)
+
+
+# @api_view(['GET','POST'])
+# def register(request):
+# 	if request.method=='GET':
+# 		pass
+# 	if request.method=='POST':
+# 		pass
+
+
+@api_view(['POST'])
+def login(request):
+    form = LoginForm(request.POST)
+    if form.is_valid():
+        captcha_from_user = form.cleaned_data['captcha']
+        captcha_from_sess = request.session.get('captcha', '')
+        if captcha_from_sess.lower() != captcha_from_user.lower():
+            data = {'code': 302, 'message': '验证码不匹配'}
+        else:
+            tel = form.cleaned_data['tel']
+            user = Users.objects.filter(u_tel=tel).first()
+            if user:
+                code_from_session = request.session.get('tel')
+                code_from_user = request.POST.get('phoneCode')
+                if code_from_session == code_from_user:
+                    request.session['user'] = user
+                    data = {'code': 200, 'message': '校验成功'}
+                else:
+                    hint = '用户名或验证码错误'
+                    data = {'code': 300, 'message': hint}
+            else:
+                with atomic():
+                    wallet = Wallet()
+                    wallet.save()
+                    user = Users()
+                    user.id = wallet
+                    user.u_tel = tel
+                    user.u_nickname = '用户{}'.format(uuid.uuid4())
+                    user.save()
+                    role = Roles.objects.filter(id=1).first()
+                    user_role = Userrole()
+                    user_role.role = role
+                    user_role.user = user
+                    user_role.save()
+                    request.session['user'] = user
+                    data = {'code': 201, 'message': '用户注册成功，成功登陆'}
+    else:
+        hint = '请输入有效的登录信息'
+        data = {'code': 301, 'message': hint}
+    return JsonResponse(data)
+
+
+class DistrictViewSet(ListAPIView):
+    queryset = District.objects.all()
+    serializer_class = DistrictSimpleSerializer
+
+
+@api_view(['POST'])
+def SubmitList(request):
+    order_addr = request.data.get('order_addr')
+    order_plantime = request.data.get('order_plantime')
+    district = request.data.get('district')
+    order_money = request.data.get('order_money')
+    type_name = request.data.get('order_type')
+    order_tips = request.data.get('order_tips')
+    order_type = OrderType.objects.filter(order_type_name=type_name).first()
+    district1 = District.objects.filter(name=district).first()
+    user = request.session.get('user')
+    if order_addr and order_plantime:
+        order = Orders()
+        order.order_money = order_money
+        order.order_addr = order_addr
+        order.order_plantime = order_plantime
+        order.district = district1
+        order.order_status = 2
+        order.order_number = uuid.uuid4().hex
+        order.order_type = order_type
+        order.order_tips = order_tips
+        order.save()
+        user_order = UserOrderList()
+        user_order.u = user
+        user_order.order = order
+        user_order.save()
+        data = {
+            'code': 200, 'message': '订单已生成'
+        }
+    else:
+        data = {
+            'code': 300, 'message': '订单地址不能为空'
+        }
+    return Response(data)
 
 
 class StarStaffView(ListAPIView):
@@ -27,8 +157,8 @@ class StarStaffView(ListAPIView):
     filter_class = StarStaffFilterSet
 
     def get_queryset(self):
-        role = Roles.objects.filter(r_code=1)
-        queryset = Users.objects.filter(role=role)
+        role = Roles.objects.filter(r_code=1).first()
+        queryset = Users.objects.filter(role=role).all()
         return queryset
 
 
@@ -109,16 +239,15 @@ class OrderViewsSet(ModelViewSet):
     ordering = ('-order_createtime',)
 
     def get_queryset(self):
-        u_id = self.request.data['user']
-        user = Users.objects.filter(u_id=u_id).first()
-        self.queryset = Orders.objects.filter(users=u_id).all()
+        # u_id = self.request.session['user'].u_id
+        self.queryset = Orders.objects.filter(users=self.request.session.get('user')).all()
         return self.queryset
 
 
 @api_view(['POST'])
 def comments(request):
     try:
-        user = request.data.get('user', '')
+        user = request.session['user']
         order = request.data.get('order_id', '')
         content_star = request.data.get('content_star', '')
         content = request.data.get('content', '')
@@ -137,14 +266,14 @@ def comments(request):
 @api_view(['POST'])
 def complain(request):
     try:
-        user1 = request.data.get('user', None)
+        user1 = request.session['user']
         order_number = request.data.get('order_number', None)
         complain_content = request.data.get('complain_content', None)
         order = Orders.objects.filter(order_number=order_number).first()
         users = order.users_set.all()
         user2 = ''
         for user in users:
-            if user.u_id != int(user1):
+            if user.u_id != user1.u_id:
                 user2 = user
         complain = Complain()
         if user2:
@@ -172,6 +301,8 @@ def user_info(request):
     """完善个人信息（增加用户名和密码）"""
     user = request.session.get('user')
     # user = Users.objects.get(u_id=1)
+    if user.u_nickname and user.u_password:
+        return JsonResponse(data={'code': 300, 'mes': '信息已完善，若需修改信息请调用修改信息接口'})
     form = UserInfoForm(request.POST)
     if form.is_valid():
         user.u_nickname = form.cleaned_data['nickname']
@@ -187,14 +318,40 @@ def order_finish_or_cancel(request):
     order_number = request.POST.get('order_number')
     status = request.POST.get('order_status')
     order = Orders.objects.filter(order_number=order_number).first()
-    if status == '0':
+    status = int(status)
+    if status == 0:
         order.order_status = 0
         order.order_finishtime = datetime.datetime.now()
         order.save()
         data = {'code': 200, 'message': '取消成功'}
     else:
         order.order_status = 1
-        order.order_finishtime = datetime.datetime.now()
         order.save()
+        order.order_finishtime = datetime.datetime.now()
         data = {'code': 200, 'message': '操作成功'}
     return JsonResponse(data=data)
+
+
+@api_view(['POST'])
+def add_star_article(request):
+    # try:
+    with atomic():
+        new_star = StarArticle()
+        new_star.article = Article.objects.filter(ar_id=request.data.get('article_id')).first()
+        new_star.star = request.data.get('article_star')
+        new_star.user = request.session['user']
+        # new_star.user = Users.objects.filter(u_id=1).first()
+        new_star.save()
+        data = {'code': 200, 'mes': '评价成功'}
+    # except:
+    # 	data = {'code':400,'mes':'评价失败，请重试'}
+    return JsonResponse(data)
+
+
+class WalletAPIView(ListAPIView):
+    serializer_class = WalletSerializer
+    pagination_class = None
+
+    def get_queryset(self):
+        return Wallet.objects.filter(users=self.request.session['user'])
+#
