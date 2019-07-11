@@ -23,9 +23,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '71ajo=)0==bc0slnnhy7v#mruhs!f4h&ra6oveg3gf2o2(25&k'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+
 
 
 # Application definition
@@ -50,7 +51,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 'api.middlewares.login_authentication_middleware',
+    'api.middlewares.login_authentication_middleware',
 ]
 
 ROOT_URLCONF = 'FamilyHelp.urls'
@@ -212,4 +213,83 @@ REST_FRAMEWORK_EXTENSIONS = {
     # 配置默认缓存对象列表的key函数
     'DEFAULT_LIST_CACHE_KEY_FUNC': 'rest_framework_extensions.utils.default_list_cache_key_func',
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
+}
+
+
+# # 保持HTTPS连接的时间
+# SECURE_HSTS_SECONDS = 3600
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+#
+# # 自动重定向到安全连接
+# SECURE_SSL_REDIRECT = True
+#
+# # 避免浏览器自作聪明推断内容类型
+# SECURE_CONTENT_TYPE_NOSNIFF = True
+#
+# # 避免跨站脚本攻击
+# SECURE_BROWSER_XSS_FILTER = True
+#
+# # COOKIE只能通过HTTPS进行传输
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+#
+# # 防止点击劫持攻击手段 - 修改HTTP协议响应头
+# # 当前网站是不允许使用<iframe>标签进行加载的
+# X_FRAME_OPTIONS = 'DENY'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    # 配置日志格式化器
+    'formatters': {
+        'simple': {
+            'format': '%(asctime)s %(module)s.%(funcName)s: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        },
+        'verbose': {
+            'format': '%(asctime)s %(levelname)s [%(process)d-%(threadName)s] '
+                      '%(module)s.%(funcName)s line %(lineno)d: %(message)s',
+            'datefmt': '%Y-%m-%d %H:%M:%S',
+        }
+    },
+    # 配置日志过滤器
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        },
+    },
+    # 配置日志处理器
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'WARNING',
+            'filters': ['require_debug_true'],
+            'formatter': 'simple',
+        },
+        'file1': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'access.log',
+            'when': 'W0',
+            'backupCount': 12,
+            'formatter': 'simple',
+            'level': 'INFO',
+        },
+        'file2': {
+            'class': 'logging.handlers.TimedRotatingFileHandler',
+            'filename': 'error.log',
+            'when': 'D',
+            'backupCount': 31,
+            'formatter': 'verbose',
+            'level': 'WARNING',
+        },
+    },
+    # 配置日志器
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file1', 'file2'],
+            'propagate': True,
+            'level': 'DEBUG',
+        },
+    }
 }
