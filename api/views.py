@@ -305,9 +305,10 @@ def user_info(request):
         return JsonResponse(data={'code': 300, 'mes': '信息已完善，若需修改信息请调用修改信息接口'})
     form = UserInfoForm(request.POST)
     if form.is_valid():
-        user.u_nickname = form.cleaned_data['nickname']
-        user.u_password = to_md5_hex(form.cleaned_data['password'])
-        user.save()
+        with atomic():
+            user.u_nickname = form.cleaned_data['nickname']
+            user.u_password = to_md5_hex(form.cleaned_data['password'])
+            user.save()
         data = {'code': 200, 'message': '操作成功'}
         return JsonResponse(data=data)
 
@@ -320,15 +321,21 @@ def order_finish_or_cancel(request):
     order = Orders.objects.filter(order_number=order_number).first()
     status = int(status)
     if status == 0:
-        order.order_status = 0
-        order.order_finishtime = datetime.datetime.now()
-        order.save()
-        data = {'code': 200, 'message': '取消成功'}
+        try:
+            order.order_status = 0
+            order.order_finishtime = datetime.datetime.now()
+            order.save()
+            data = {'code': 200, 'message': '取消成功'}
+        except:
+            data = {'code': 404, 'message': '服务器繁忙，请重试'}
     else:
-        order.order_status = 1
-        order.save()
-        order.order_finishtime = datetime.datetime.now()
-        data = {'code': 200, 'message': '操作成功'}
+        try:
+            order.order_status = 1
+            order.order_finishtime = datetime.datetime.now()
+            order.save()
+            data = {'code': 200, 'message': '操作成功'}
+        except:
+            data = {'code': 404, 'message': '服务器繁忙，请重试'}
     return JsonResponse(data=data)
 
 
