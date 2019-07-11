@@ -62,6 +62,7 @@ class Users(models.Model):
 		db_table = 'Users'
 
 
+
 class Comment(models.Model):
 	order = models.ForeignKey('Orders', models.PROTECT, blank=True, null=True)
 	user = models.ForeignKey('Users', models.PROTECT, blank=True, null=True)
