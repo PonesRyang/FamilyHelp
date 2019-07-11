@@ -120,29 +120,34 @@ def SubmitList(request):
     order_type = OrderType.objects.filter(order_type_name=type_name).first()
     district1 = District.objects.filter(name=district).first()
     user = request.session.get('user')
+
     if order_addr and order_plantime:
-        order = Orders()
-        order.order_money = order_money
-        order.order_addr = order_addr
-        order.order_plantime = order_plantime
-        order.district = district1
-        order.order_status = 2
-        order.order_number = uuid.uuid4().hex
-        order.order_type = order_type
-        order.order_tips = order_tips
-        order.save()
-        user_order = UserOrderList()
-        user_order.u = user
-        user_order.order = order
-        user_order.save()
-        data = {
-            'code': 200, 'message': '订单已生成'
-        }
+        try:
+            with atomic():
+                order = Orders()
+                order.order_money = order_money
+                order.order_addr = order_addr
+                order.order_plantime = order_plantime
+                order.district = district1
+                order.order_status = 2
+                order.order_number = uuid.uuid4().hex
+                order.order_type = order_type
+                order.order_tips = order_tips
+                order.save()
+                user_order = UserOrderList()
+                user_order.u = user
+                user_order.order = order
+                user_order.save()
+            data = {
+                'code': 200, 'message': '订单已生成'
+            }
+        except:
+            data = {'code':403, 'message':'订单信息格式错误'}
     else:
         data = {
             'code': 300, 'message': '订单地址不能为空'
         }
-    return Response(data)
+    return JsonResponse(data)
 
 
 class StarStaffView(ListAPIView):
