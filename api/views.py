@@ -251,12 +251,13 @@ def comments(request):
         order = request.data.get('order_id', '')
         content_star = request.data.get('content_star', '')
         content = request.data.get('content', '')
-        comment = Comment()
-        comment.user_id = user
-        comment.order_id = order
-        comment.content = content
-        comment.content_star = content_star
-        comment.save()
+        with atomic():
+            comment = Comment()
+            comment.user_id = user
+            comment.order_id = order
+            comment.content = content
+            comment.content_star = content_star
+            comment.save()
         data = {'code': 200, 'mes': '评价成功'}
     except:
         data = {'code': 300, 'mes': '评价失败,请稍后再试'}
