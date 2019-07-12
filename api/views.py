@@ -95,7 +95,7 @@ def login(request):
 				wallet.money_int = 0
 				wallet.money_decimal = 0
 				wallet.save()
-				user.id=wallet
+				user.id = wallet
 				request.session['user'] = user
 				data = {'code': 201, 'message': '用户注册成功，成功登陆'}
 	else:
@@ -117,23 +117,27 @@ def SubmitList(request):
 	district1 = District.objects.get(name=district)
 	user = request.session.get('user')
 	if order_addr and order_plantime:
-		current_time = timezone.now()
-		order = Orders()
-		order.order_addr = order_addr
-		order.order_plantime = order_plantime
-		order.order_createtime = current_time
-		order.district = district1
-		user_order = UserOrderList()
-		user_order.u = user
-		user_order.order = order
-		user_order.save()
-		order.u = user
-		order.order_status = 2
-		order.order_number = uuid.uuid4().hex
-		order.save()
-		data = {
-			'code': 200, 'message': '订单已生成'
-		}
+		try:
+			with atomic():
+				current_time = timezone.now()
+				order = Orders()
+				order.order_addr = order_addr
+				order.order_plantime = order_plantime
+				order.order_createtime = current_time
+				order.district = district1
+				user_order = UserOrderList()
+				user_order.u = user
+				user_order.order = order
+				user_order.save()
+				order.u = user
+				order.order_status = 2
+				order.order_number = uuid.uuid4().hex
+				order.save()
+				data = {
+					'code': 200, 'message': '订单已生成'
+				}
+		except:
+			data = {'code': 403, 'message': '订单信息格式错误'}
 	else:
 		data = {
 			'code': 300, 'message': '订单地址不能为空'
@@ -195,7 +199,7 @@ def change_information(request):
 	return JsonResponse(data=data)
 
 
-@api_view(['POST'])
+@api_view(['    '])
 def logout(request):
 	request.session.clear()
 	return JsonResponse(data={'code': 200, 'back_url': '   /'})
@@ -240,12 +244,13 @@ class OrderViewsSet(ModelViewSet):
 def comments(request):
 	try:
 		user = request.session['user']
-		order = request.data.get('order_id', '')
+		order_number = request.data.get('order_number', None)
+		order = Orders.objects.filter(order_number=order_number).first()
 		content_star = request.data.get('content_star', '')
 		content = request.data.get('content', '')
 		comment = Comment()
-		comment.user_id = user
-		comment.order_id = order
+		comment.user = user
+		comment.order = order
 		comment.content = content
 		comment.content_star = content_star
 		comment.save()
@@ -297,9 +302,10 @@ def user_info(request):
 		return JsonResponse(data={'code': 300, 'mes': '信息已完善，若需修改信息请调用修改信息接口'})
 	form = UserInfoForm(request.POST)
 	if form.is_valid():
-		user.u_nickname = form.cleaned_data['nickname']
-		user.u_password = to_md5_hex(form.cleaned_data['password'])
-		user.save()
+		with atomic():
+			user.u_nickname = form.cleaned_data['nickname']
+			user.u_password = to_md5_hex(form.cleaned_data['password'])
+			user.save()
 		data = {'code': 200, 'message': '操作成功'}
 		return JsonResponse(data=data)
 
@@ -312,31 +318,37 @@ def order_finish_or_cancel(request):
 	order = Orders.objects.filter(order_number=order_number).first()
 	status = int(status)
 	if status == 0:
-		order.order_status = 0
-		order.order_finishtime = datetime.datetime.now()
-		order.save()
-		data = {'code': 200, 'message': '取消成功'}
+		try:
+			order.order_status = 0
+			order.order_finishtime = datetime.datetime.now()
+			order.save()
+			data = {'code': 200, 'message': '取消成功'}
+		except:
+			data = {'code': 404, 'message': '服务器繁忙，请重试'}
 	else:
-		order.order_status = 1
-		order.save()
-		order.order_finishtime = datetime.datetime.now()
-		data = {'code': 200, 'message': '操作成功'}
+		try:
+			order.order_status = 1
+			order.save()
+			order.order_finishtime = datetime.datetime.now()
+			data = {'code': 200, 'message': '操作成功'}
+		except:
+			data = {'code': 404, 'message': '服务器繁忙，请重试'}
 	return JsonResponse(data=data)
 
 
 @api_view(['POST'])
 def add_star_article(request):
-	# try:
-	with atomic():
-		new_star = StarArticle()
-		new_star.article = Article.objects.filter(ar_id=request.data.get('article_id')).first()
-		new_star.star = request.data.get('article_star')
-		new_star.user = request.session['user']
-		# new_star.user = Users.objects.filter(u_id=1).first()
-		new_star.save()
-		data = {'code': 200, 'mes': '评价成功'}
-	# except:
-	# 	data = {'code':400,'mes':'评价失败，请重试'}
+	try:
+		with atomic():
+			new_star = StarArticle()
+			new_star.article = Article.objects.filter(ar_id=request.data.get('article_id')).first()
+			new_star.star = request.data.get('article_star')
+			new_star.user = request.session['user']
+			# new_star.user = Users.objects.filter(u_id=1).first()
+			new_star.save()
+			data = {'code': 200, 'mes': '评价成功'}
+	except:
+		data = {'code':400,'mes':'评价失败，请重试'}
 	return JsonResponse(data)
 
 

@@ -5,6 +5,7 @@ from api import views
 from api.views import ArticleAPIView, OrderViewsSet, comments, complain, add_star_article, user_info, \
 	order_finish_or_cancel, SubmitList, StarStaffView, ProvinceView, DistrictView, OrdersTypeViewSet, WalletAPIView
 
+
 urlpatterns = [
 	path('personal_information/', views.change_information),
 	path('logout/', views.logout),
